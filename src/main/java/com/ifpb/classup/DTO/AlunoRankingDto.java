@@ -1,4 +1,4 @@
-package com.classroom.classroom.DTO;
+package com.ifpb.classup.DTO;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

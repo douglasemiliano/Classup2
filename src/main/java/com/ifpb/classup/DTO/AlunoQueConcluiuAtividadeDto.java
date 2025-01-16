@@ -1,4 +1,4 @@
-package com.classroom.classroom.DTO;
+package com.ifpb.classup.DTO;
 
 public class AlunoQueConcluiuAtividadeDto {
 

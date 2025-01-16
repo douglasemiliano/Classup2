@@ -1,4 +1,4 @@
-package com.classroom.classroom.service;
+package com.ifpb.classup.service;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.TokenResponse;

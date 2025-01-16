@@ -1,4 +1,4 @@
-package com.classroom.classroom.model;
+package com.ifpb.classup.model;
 
 import lombok.*;
 

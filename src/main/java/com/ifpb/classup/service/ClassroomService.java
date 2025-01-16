@@ -1,8 +1,8 @@
-package com.classroom.classroom.service;
+package com.ifpb.classup.service;
 
-import com.classroom.classroom.DTO.AlunoQueConcluiuAtividadeDto;
-import com.classroom.classroom.DTO.AlunoRankingDto;
-import com.classroom.classroom.model.Atividade;
+import com.ifpb.classup.DTO.AlunoQueConcluiuAtividadeDto;
+import com.ifpb.classup.DTO.AlunoRankingDto;
+import com.ifpb.classup.model.Atividade;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;

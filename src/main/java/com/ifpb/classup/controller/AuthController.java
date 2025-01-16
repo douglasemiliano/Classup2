@@ -1,12 +1,6 @@
-package com.classroom.classroom.controller;
+package com.ifpb.classup.controller;
 
-import com.classroom.classroom.service.AuthService;
-import com.classroom.classroom.service.ClassroomService;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.classroom.Classroom;
-import com.google.api.services.classroom.model.ListCoursesResponse;
+import com.ifpb.classup.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.classroom.classroom;
+package com.ifpb.classup;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
