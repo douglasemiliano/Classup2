@@ -1,15 +1,21 @@
 package com.ifpb.classup.service;
 
+import com.google.api.client.auth.oauth2.BearerToken;
 import com.ifpb.classup.DTO.AlunoQueConcluiuAtividadeDto;
 import com.ifpb.classup.DTO.AlunoRankingDto;
+import com.ifpb.classup.DTO.AtividadeRequestDto;
 import com.ifpb.classup.model.Atividade;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.classroom.Classroom;
 import com.google.api.services.classroom.model.*;
+import com.ifpb.classup.model.Badge;
+import com.ifpb.classup.repository.BadgeRepository;
+import com.ifpb.classup.utils.BadgesPadrao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.google.api.services.classroom.model.Date;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -21,8 +27,13 @@ public class ClassroomService {
     @Autowired
     private AuthService authService;
 
-    private Classroom initializeClassroomClient() throws GeneralSecurityException, IOException {
-        Credential credentials = authService.getCredentials();
+    @Autowired
+    private BadgeRepository badgeRepository;
+
+    private Classroom initializeClassroomClient(String accessToken) throws GeneralSecurityException, IOException {
+        Credential credentials = new Credential(BearerToken.authorizationHeaderAccessMethod())
+                .setAccessToken(accessToken);
+
         return new Classroom.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
                 GsonFactory.getDefaultInstance(),
@@ -30,9 +41,10 @@ public class ClassroomService {
         ).setApplicationName("Classroom App").build();
     }
 
-    public List<Course> listCourses() throws GeneralSecurityException, IOException {
+
+    public List<Course> listCourses(String accessToken) throws GeneralSecurityException, IOException {
         try {
-            Classroom service = initializeClassroomClient();
+            Classroom service = initializeClassroomClient(accessToken);
             ListCoursesResponse response = service.courses().list().execute();
             return response.getCourses();
         } catch (Exception e) {
@@ -40,9 +52,44 @@ public class ClassroomService {
         }
     }
 
-    public List<Atividade> listCourseWork(String courseId) throws GeneralSecurityException, IOException {
+    public CourseWork criarAtividade(String courseId, AtividadeRequestDto atividadeRequestDto, String accessToken) throws GeneralSecurityException, IOException {
         try {
-            Classroom service = initializeClassroomClient();
+            Classroom service = initializeClassroomClient(accessToken);
+            CourseWork courseWork = new CourseWork()
+                    .setTitle(atividadeRequestDto.getTitulo())
+                    .setDescription(atividadeRequestDto.getDescricao())
+                    .setMaxPoints(atividadeRequestDto.getPontuacaoMaxima())
+                    .setWorkType("ASSIGNMENT") // Tipo de trabalho (ex: tarefa)
+                    .setState("PUBLISHED")    // Estado (ex: publicado)
+                    .setDueDate(new Date()
+                            .setYear(atividadeRequestDto.getAno())
+                            .setMonth(atividadeRequestDto.getMes())
+                            .setDay(atividadeRequestDto.getDia()))
+                    .setDueTime(new TimeOfDay()
+                            .setHours(atividadeRequestDto.getHoras())
+                            .setMinutes(atividadeRequestDto.getMinutos()))
+                    .setMaterials(Collections.emptyList()) // Materiais (se houver)
+                    .setCourseId(courseId);
+
+            return service.courses().courseWork().create(courseId, courseWork).execute();
+        } catch (Exception e) {
+                throw new IOException("Erro ao listar cursos: " + e.getMessage(), e);
+        }
+    }
+
+    public String deletarAtividade(String courseId, String atividadeId, String accessToken) throws GeneralSecurityException, IOException {
+        try {
+            Classroom service = initializeClassroomClient(accessToken);
+            service.courses().courseWork().delete(courseId, atividadeId).execute();
+            return "Atividade excluida com sucesso!";
+        } catch (Exception e) {
+            throw new IOException("Erro ao listar cursos: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Atividade> listCourseWork(String courseId, String accessToken) throws GeneralSecurityException, IOException {
+        try {
+            Classroom service = initializeClassroomClient(accessToken);
             ListCourseWorkResponse courseWorkResponse = service.courses().courseWork().list(courseId).execute();
 
             List<Atividade> atividades = new ArrayList<>();
@@ -67,9 +114,9 @@ public class ClassroomService {
         }
     }
 
-    public List<CourseWork> listarAtividadeCompleta(String courseId) throws GeneralSecurityException, IOException {
+    public List<CourseWork> listarAtividadeCompleta(String courseId, String accessToken) throws GeneralSecurityException, IOException {
         try {
-            Classroom service = initializeClassroomClient();
+            Classroom service = initializeClassroomClient(accessToken);
             ListCourseWorkResponse courseWorkResponse = service.courses().courseWork().list(courseId).execute();
 
             return courseWorkResponse.getCourseWork();
@@ -78,10 +125,10 @@ public class ClassroomService {
         }
     }
 
-    public List<AlunoQueConcluiuAtividadeDto> listStudentSubmissions(String courseId, String assignmentId)
+    public List<AlunoQueConcluiuAtividadeDto> listStudentSubmissions(String courseId, String assignmentId, String accessToken)
             throws GeneralSecurityException, IOException {
         try {
-            Classroom service = initializeClassroomClient();
+            Classroom service = initializeClassroomClient(accessToken);
             ListStudentSubmissionsResponse response = service.courses().courseWork().studentSubmissions()
                     .list(courseId, assignmentId).execute();
 
@@ -114,11 +161,11 @@ public class ClassroomService {
         }
     }
 
-    public List<AlunoRankingDto> obterRankingAlunos(String courseId) throws IOException, GeneralSecurityException {
+    public List<AlunoRankingDto> obterRankingAlunos(String courseId, String accessToken) throws IOException, GeneralSecurityException {
         try {
-            Classroom service = initializeClassroomClient();
+            Classroom service = initializeClassroomClient(accessToken);
             Map<String, Double> pontuacoesAlunos = new HashMap<>();
-            List<CourseWork> atividades = listarAtividadeCompleta(courseId);
+            List<CourseWork> atividades = listarAtividadeCompleta(courseId, accessToken);
 
             for (CourseWork atividade : atividades) {
                 ListStudentSubmissionsResponse response = service.courses().courseWork().studentSubmissions()
@@ -150,48 +197,82 @@ public class ClassroomService {
         return grade != null ? grade : 0.0;
     }
 
-    public Map<String, String> atribuirBadgeParaAlunos(String courseId) throws IOException, GeneralSecurityException {
-        try {
-            Classroom service = initializeClassroomClient();
-            Map<String, Integer> atividadesConcluidasPorAluno = new HashMap<>();
-            List<CourseWork> atividades = listarAtividadeCompleta(courseId);
+//    public Map<String, String> atribuirBadgeParaAlunos(String courseId) throws IOException, GeneralSecurityException {
+//        try {
+//            Classroom service = initializeClassroomClient();
+//            Map<String, Integer> atividadesConcluidasPorAluno = new HashMap<>();
+//            List<CourseWork> atividades = listarAtividadeCompleta(courseId);
+//
+//
+//            // Contar atividades concluídas por cada aluno
+//            for (CourseWork atividade : atividades) {
+//                ListStudentSubmissionsResponse response = service.courses().courseWork().studentSubmissions()
+//                        .list(courseId, atividade.getId()).execute();
+//
+//                System.err.println("atividade - " + atividade);
+//
+//                for (StudentSubmission submissao : response.getStudentSubmissions()) {
+//
+//                    System.err.println("sub - " + submissao);
+//
+//                    if ("TURNED_IN".equals(submissao.getState()) || "RETURNED".equals(submissao.getState())) { // Verifica se o aluno entregou a atividade
+//                        String alunoId = submissao.getUserId();
+//                        atividadesConcluidasPorAluno.merge(alunoId, 1, Integer::sum);
+//                    }
+//                }
+//            }
+//
+//            System.err.println(atividades);
+//            System.err.println(atividadesConcluidasPorAluno);
+//
+//            // Atribuir badges para alunos com pelo menos 2 atividades concluídas
+//            Map<String, String> badges = new HashMap<>();
+//            for (Map.Entry<String, Integer> entry : atividadesConcluidasPorAluno.entrySet()) {
+//                if (entry.getValue() >= 2) {
+//                    UserProfile perfilAluno = service.userProfiles().get(entry.getKey()).execute();
+//                    String nomeAluno = perfilAluno.getName().getFullName();
+//                    badges.put(entry.getKey(), "Badge concedida para " + nomeAluno);
+//                }
+//            }
+//
+//            return badges;
+//        } catch (Exception e) {
+//            throw new IOException("Erro ao atribuir badges: " + e.getMessage(), e);
+//        }
+//    }
 
 
-            // Contar atividades concluídas por cada aluno
-            for (CourseWork atividade : atividades) {
-                ListStudentSubmissionsResponse response = service.courses().courseWork().studentSubmissions()
-                        .list(courseId, atividade.getId()).execute();
+    public Map<String, String> atribuirBadgeParaAlunos(String courseId, String accessToken) throws IOException, GeneralSecurityException {
+        Classroom service = initializeClassroomClient(accessToken);
+        Map<String, Integer> atividadesConcluidasPorAluno = new HashMap<>();
+        List<CourseWork> atividades = listarAtividadeCompleta(courseId, accessToken);
 
-                System.err.println("atividade - " + atividade);
+        for (CourseWork atividade : atividades) {
+            ListStudentSubmissionsResponse response = service.courses().courseWork().studentSubmissions()
+                    .list(courseId, atividade.getId()).execute();
 
-                for (StudentSubmission submissao : response.getStudentSubmissions()) {
-
-                    System.err.println("sub - " + submissao);
-
-                    if ("TURNED_IN".equals(submissao.getState()) || "RETURNED".equals(submissao.getState())) { // Verifica se o aluno entregou a atividade
-                        String alunoId = submissao.getUserId();
-                        atividadesConcluidasPorAluno.merge(alunoId, 1, Integer::sum);
-                    }
+            for (StudentSubmission submissao : response.getStudentSubmissions()) {
+                if ("TURNED_IN".equals(submissao.getState()) || "RETURNED".equals(submissao.getState())) {
+                    String alunoId = submissao.getUserId();
+                    atividadesConcluidasPorAluno.merge(alunoId, 1, Integer::sum);
                 }
             }
-
-            System.err.println(atividades);
-            System.err.println(atividadesConcluidasPorAluno);
-
-            // Atribuir badges para alunos com pelo menos 2 atividades concluídas
-            Map<String, String> badges = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : atividadesConcluidasPorAluno.entrySet()) {
-                if (entry.getValue() >= 2) {
-                    UserProfile perfilAluno = service.userProfiles().get(entry.getKey()).execute();
-                    String nomeAluno = perfilAluno.getName().getFullName();
-                    badges.put(entry.getKey(), "Badge concedida para " + nomeAluno);
-                }
-            }
-
-            return badges;
-        } catch (Exception e) {
-            throw new IOException("Erro ao atribuir badges: " + e.getMessage(), e);
         }
+
+        Map<String, String> badges = new HashMap<>();
+
+        for (Map.Entry<String, Integer> entry : atividadesConcluidasPorAluno.entrySet()) {
+            if (entry.getValue() >= 2) {
+                UserProfile perfilAluno = service.userProfiles().get(entry.getKey()).execute();
+                String nomeAluno = perfilAluno.getName().getFullName();
+                Badge badge = BadgesPadrao.COMPLETAR_DUAS_ATIVIDADES;
+                badgeRepository.save(badge); // Salva no MongoDB
+                badges.put(entry.getKey(), "Badge concedida para " + nomeAluno);
+            }
+        }
+
+        return badges;
     }
+
 
 }

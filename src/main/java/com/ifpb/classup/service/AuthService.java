@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
-
 @Service
 public class AuthService {
     @Value("${google.client-id}")
@@ -23,8 +22,7 @@ public class AuthService {
 
     @Value("${google.client-secret}")
     private String clientSecret;
-
-    private static final String REDIRECT_URI = "http://localhost:8081/Callback";
+    private static final String REDIRECT_URI = "http://localhost:4200/callback";
 
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> scopes = Arrays.asList(
@@ -36,8 +34,7 @@ public class AuthService {
             ClassroomScopes.CLASSROOM_PROFILE_PHOTOS,
             Oauth2Scopes.USERINFO_PROFILE
     );
-
-    private static Credential storedCredential; // Variável estática para armazenar as credenciais
+    private static Credential storedCredential;
 
     public String getAuthUrl() throws GeneralSecurityException, IOException {
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
@@ -64,6 +61,8 @@ public class AuthService {
         ).setAccessType("offline")
                 .build();
 
+        System.err.println("entrou" +authorizationCode);
+
         // Trocando o código de autorização pelo token
         TokenResponse tokenResponse = flow.newTokenRequest(authorizationCode)
                 .setRedirectUri(REDIRECT_URI)
@@ -75,26 +74,5 @@ public class AuthService {
 
     public Credential getCredentials() {
         return storedCredential; // Retorna as credenciais armazenadas
-    }
-
-    public void handleAuthCode(String code) throws IOException, GeneralSecurityException {
-        // Configure o fluxo de autenticação
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                GoogleNetHttpTransport.newTrustedTransport(),
-                GsonFactory.getDefaultInstance(),
-                clientId,
-                clientSecret,
-                scopes
-        ).setAccessType("offline").build();
-
-        // Troque o código pelo token
-        TokenResponse tokenResponse = flow.newTokenRequest(code)
-                .setRedirectUri(REDIRECT_URI)
-                .execute();
-
-        Credential credential = flow.createAndStoreCredential(tokenResponse, "user");
-
-        // Armazene ou utilize as credenciais como preferir
-        System.out.println("Token de acesso obtido: " + credential.getAccessToken());
     }
 }
