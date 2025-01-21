@@ -31,14 +31,15 @@ public class ClassroomController {
     private AuthService authService;
 
     @GetMapping("/courses")
-    public ResponseEntity<?> listCourses(@RequestBody String accessToken) throws GeneralSecurityException, IOException {
+    public ResponseEntity<?> listCourses(@RequestHeader String accessToken) throws GeneralSecurityException, IOException {
+        System.err.println(accessToken);
         return ResponseEntity.ok(this.classroomService.listCourses(accessToken));
     }
 
     //pega as infos de um curso
     @GetMapping("/coursework/{courseId}")
-    public ResponseEntity<List<Atividade>> listCourseWork(@PathVariable String courseId, @RequestBody String accessToken) throws GeneralSecurityException, IOException {
-        System.err.println("coursework");
+    public ResponseEntity<List<Atividade>> listCourseWork(@PathVariable String courseId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
+        System.err.println(accessToken);
         List<Atividade> courseWorks = classroomService.listCourseWork(courseId, accessToken);
         return ResponseEntity.ok(courseWorks);
     }
@@ -46,34 +47,34 @@ public class ClassroomController {
     @PostMapping("/coursework/{courseId}")
     public ResponseEntity<CourseWork> criarAtividade(@PathVariable String courseId,
                                                      @RequestBody AtividadeRequestDto atividadeRequestDto,
-                                                     @RequestBody String accessToken) throws GeneralSecurityException, IOException {
+                                                     @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
         CourseWork courseWork = classroomService.criarAtividade(courseId, atividadeRequestDto, accessToken);
         System.err.println(courseWork);
         return ResponseEntity.ok(courseWork);
     }
 
     @DeleteMapping("/coursework/{courseId}/{atividadeId}")
-    public ResponseEntity<String> deletarAtividade(@PathVariable String courseId, @PathVariable String atividadeId, @RequestBody String accessToken) throws GeneralSecurityException, IOException {
+    public ResponseEntity<String> deletarAtividade(@PathVariable String courseId, @PathVariable String atividadeId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
         String courseWork = classroomService.deletarAtividade(courseId, atividadeId, accessToken);
         System.err.println(courseWork);
         return ResponseEntity.ok(courseWork);
     }
 
     @GetMapping("/fullCoursework/{courseId}")
-    public ResponseEntity<List<CourseWork>> listarAtividadesCompletas(@PathVariable String courseId, @RequestBody String accessToken) throws GeneralSecurityException, IOException {
+    public ResponseEntity<List<CourseWork>> listarAtividadesCompletas(@PathVariable String courseId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
         System.err.println("coursework");
         List<CourseWork> courseWorks = classroomService.listarAtividadeCompleta(courseId, accessToken);
         return ResponseEntity.ok(courseWorks);
     }
 
     @GetMapping("/submissions/{courseId}/{assignmentId}")
-    public ResponseEntity<List<AlunoQueConcluiuAtividadeDto>> listStudentSubmissions(@PathVariable String courseId, @PathVariable String assignmentId, @RequestBody String accessToken) throws GeneralSecurityException, IOException {
+    public ResponseEntity<List<AlunoQueConcluiuAtividadeDto>> listStudentSubmissions(@PathVariable String courseId, @PathVariable String assignmentId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
         List<AlunoQueConcluiuAtividadeDto> submissions = classroomService.listStudentSubmissions(courseId, assignmentId, accessToken);
         return ResponseEntity.ok(submissions);
     }
 
     @GetMapping("/ranking/{courseId}")
-    public ResponseEntity<List<AlunoRankingDto>> obterRankingAlunos(@PathVariable String courseId, @RequestBody String accessToken) throws GeneralSecurityException, IOException {
+    public ResponseEntity<List<AlunoRankingDto>> obterRankingAlunos(@PathVariable String courseId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
 // Use scopes apropriados para alunos
         List<AlunoRankingDto> ranking = classroomService.obterRankingAlunos(courseId, accessToken);
 
@@ -81,7 +82,7 @@ public class ClassroomController {
     }
 
     @GetMapping("/courses/{courseId}/badges")
-    public ResponseEntity<Map<String, String>> getBadges(@PathVariable String courseId, @RequestBody String accessToken) {
+    public ResponseEntity<Map<String, String>> getBadges(@PathVariable String courseId, @RequestHeader String accessToken) {
         try {
             Map<String, String> badges = classroomService.atribuirBadgeParaAlunos(courseId, accessToken);
             return ResponseEntity.ok(badges);
