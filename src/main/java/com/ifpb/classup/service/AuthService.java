@@ -8,6 +8,8 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.classroom.ClassroomScopes;
 import com.google.api.services.oauth2.Oauth2Scopes;
+import com.ifpb.classup.model.Usuario;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,19 +24,24 @@ public class AuthService {
 
     @Value("${google.client-secret}")
     private String clientSecret;
-    private static final String REDIRECT_URI = "http://localhost:4200/callback";
+    private static final String REDIRECT_URI = "http://localhost:8080/Callback";
 
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> scopes = Arrays.asList(
             ClassroomScopes.CLASSROOM_COURSES,
             ClassroomScopes.CLASSROOM_COURSEWORK_STUDENTS,
-            ClassroomScopes.CLASSROOM_COURSES,
             ClassroomScopes.CLASSROOM_ROSTERS,
+            ClassroomScopes.CLASSROOM_COURSEWORK_STUDENTS_READONLY,
+            ClassroomScopes.CLASSROOM_COURSEWORK_ME,
+            ClassroomScopes.CLASSROOM_COURSEWORK_ME_READONLY,
             ClassroomScopes.CLASSROOM_PROFILE_EMAILS,
             ClassroomScopes.CLASSROOM_PROFILE_PHOTOS,
             Oauth2Scopes.USERINFO_PROFILE
     );
     private static Credential storedCredential;
+
+    @Autowired
+    private UsuarioService usuarioService;
 
     public String getAuthUrl() throws GeneralSecurityException, IOException {
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
@@ -51,7 +58,7 @@ public class AuthService {
                 .build();
     }
 
-    public void saveCredentials(String authorizationCode) throws IOException, GeneralSecurityException {
+    public String saveCredentials(String authorizationCode) throws IOException, GeneralSecurityException {
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
                 JSON_FACTORY,
@@ -68,8 +75,13 @@ public class AuthService {
                 .setRedirectUri(REDIRECT_URI)
                 .execute();
 
+
+        this.usuarioService.getGoogleProfile(tokenResponse.getAccessToken());
+
         // Criando as credenciais com base no token recebido
         storedCredential = flow.createAndStoreCredential(tokenResponse, "user");
+
+        return tokenResponse.getAccessToken();
     }
 
     public Credential getCredentials() {

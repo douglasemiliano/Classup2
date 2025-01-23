@@ -1,6 +1,8 @@
 package com.ifpb.classup.controller;
 
 import com.google.api.services.classroom.model.Course;
+import com.google.api.services.classroom.model.ListCourseWorkResponse;
+import com.google.api.services.classroom.model.Student;
 import com.ifpb.classup.DTO.AlunoQueConcluiuAtividadeDto;
 import com.ifpb.classup.DTO.AlunoRankingDto;
 import com.ifpb.classup.DTO.AtividadeRequestDto;
@@ -71,6 +73,23 @@ public class ClassroomController {
     public ResponseEntity<List<AlunoQueConcluiuAtividadeDto>> listStudentSubmissions(@PathVariable String courseId, @PathVariable String assignmentId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
         List<AlunoQueConcluiuAtividadeDto> submissions = classroomService.listStudentSubmissions(courseId, assignmentId, accessToken);
         return ResponseEntity.ok(submissions);
+    }
+
+    @GetMapping("/students/{courseId}")
+    public ResponseEntity<List<Student>> listStudentSubmissions(@PathVariable String courseId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
+        System.err.println("entrou");
+        List<Student> submissions = classroomService.listStudents(courseId, accessToken);
+
+        return ResponseEntity.ok(submissions);
+    }
+
+    @GetMapping("atividade/{courseId}/{userId}")
+    public ResponseEntity<List<CourseWork>> listarMinhasAtividades(@PathVariable String courseId, @PathVariable String userId, @RequestHeader String accessToken) throws GeneralSecurityException, IOException {
+
+       List<CourseWork> response = classroomService.listarAtividadesComStatus(courseId, userId, accessToken);
+
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/ranking/{courseId}")

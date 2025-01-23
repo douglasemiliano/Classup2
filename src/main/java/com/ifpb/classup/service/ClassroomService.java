@@ -11,6 +11,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.classroom.Classroom;
 import com.google.api.services.classroom.model.*;
 import com.ifpb.classup.model.Badge;
+import com.ifpb.classup.model.Curso;
 import com.ifpb.classup.repository.BadgeRepository;
 import com.ifpb.classup.utils.BadgesPadrao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class ClassroomService {
     @Autowired
     private BadgeRepository badgeRepository;
 
+    @Autowired
+    private UsuarioService usuarioService;
+
     private Classroom initializeClassroomClient(String accessToken) throws GeneralSecurityException, IOException {
         Credential credentials = new Credential(BearerToken.authorizationHeaderAccessMethod())
                 .setAccessToken(accessToken);
@@ -42,10 +46,29 @@ public class ClassroomService {
     }
 
 
+    public Course createCourse(String accessToken, Curso curso) throws GeneralSecurityException, IOException {
+        Classroom service = initializeClassroomClient(accessToken);
+
+        curso.setIdProprietario(this.usuarioService.getGoogleProfile(accessToken).getId());
+
+        DriveFolder driveFolder = new DriveFolder();
+        driveFolder.setTitle(curso.getTitulo());
+
+        Course course = new Course()
+                .setName(curso.getTitulo())
+                .setTeacherFolder(driveFolder)
+                .setSection(curso.getSection())
+                .setDescription(curso.getDescricao())
+                .setOwnerId(curso.getIdProprietario());
+        return service.courses().create(course).execute();
+    }
+
+
     public List<Course> listCourses(String accessToken) throws GeneralSecurityException, IOException {
         try {
             Classroom service = initializeClassroomClient(accessToken);
             ListCoursesResponse response = service.courses().list().execute();
+            service.courses().list().execute();
             return response.getCourses();
         } catch (Exception e) {
             throw new IOException("Erro ao listar cursos: " + e.getMessage(), e);
@@ -88,9 +111,12 @@ public class ClassroomService {
     }
 
     public List<Atividade> listCourseWork(String courseId, String accessToken) throws GeneralSecurityException, IOException {
+
         try {
             Classroom service = initializeClassroomClient(accessToken);
             ListCourseWorkResponse courseWorkResponse = service.courses().courseWork().list(courseId).execute();
+
+            System.err.println(courseWorkResponse);
 
             List<Atividade> atividades = new ArrayList<>();
             if (courseWorkResponse.getCourseWork() != null) {
@@ -122,6 +148,44 @@ public class ClassroomService {
             return courseWorkResponse.getCourseWork();
         } catch (Exception e) {
             throw new IOException("Erro ao listar atividades: " + e.getMessage(), e);
+        }
+    }
+
+    public List<CourseWork> listarAtividadesComStatus(String courseId, String userId, String accessToken) throws GeneralSecurityException, IOException {
+        Classroom service = initializeClassroomClient(accessToken);
+
+        List<CourseWork> response = new ArrayList<>();
+
+        List<CourseWork> courseWorkResponse = service.courses().courseWork().list(courseId).execute().getCourseWork();
+
+        for (CourseWork courseWork : courseWorkResponse) {
+           List<StudentSubmission> submissions = service.courses().courseWork().studentSubmissions().list(courseId, courseWork.getId()).execute().getStudentSubmissions();
+           submissions.stream()
+                   .filter(studentSubmission -> studentSubmission.getUserId().equals(userId))
+                   .forEach(submission -> {
+               System.err.println(submission.getUserId());
+                   courseWork.setState(submission.getState());
+                   response.add(courseWork);
+
+               System.err.println(submission.getState());
+           });
+
+        }
+
+
+        return response;
+    }
+
+    public List<Student> listStudents(String courseId, String accessToken) throws GeneralSecurityException, IOException {
+        try {
+            Classroom service = initializeClassroomClient(accessToken);
+            ListStudentsResponse response = service.courses().students().list(courseId).execute();
+            List<Student> alunos = service.courses().students().list(courseId).execute().getStudents();
+            System.err.println("alinoooos - - -  " + alunos);
+            System.err.println(response);
+            return response.getStudents();
+        } catch (Exception e) {
+            throw new IOException("Erro ao listar alunos: " + e.getMessage(), e);
         }
     }
 
@@ -273,6 +337,7 @@ public class ClassroomService {
 
         return badges;
     }
+
 
 
 }

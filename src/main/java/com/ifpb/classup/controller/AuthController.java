@@ -28,10 +28,10 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/callback")
+    @GetMapping("/Callback")
     public ResponseEntity<String> saveCredentials(@RequestParam("code") String code) throws GeneralSecurityException, IOException {
-            authService.saveCredentials(code);
-            return ResponseEntity.ok("Autenticação realizada com sucesso e credenciais salvas!");
+            String accessToken = authService.saveCredentials(code);
+            return ResponseEntity.ok(accessToken);
 
     }
 }

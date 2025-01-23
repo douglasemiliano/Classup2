@@ -26,9 +26,6 @@ import java.util.*;
 public class UsuarioService {
 
     @Autowired
-    private AuthService authService;
-
-    @Autowired
     private UsuarioRepository usuarioRepository;
 
     private Classroom initializeClassroomClient(String accessToken) throws GeneralSecurityException, IOException {
@@ -40,6 +37,10 @@ public class UsuarioService {
                 GsonFactory.getDefaultInstance(),
                 credentials
         ).setApplicationName("Classroom App").build();
+    }
+
+    public Usuario encontrarUsuarioPorId(String id) {
+        return this.usuarioRepository.findById(id).orElse(null);
     }
 
 
