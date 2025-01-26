@@ -160,15 +160,19 @@ public class ClassroomService {
 
         for (CourseWork courseWork : courseWorkResponse) {
            List<StudentSubmission> submissions = service.courses().courseWork().studentSubmissions().list(courseId, courseWork.getId()).execute().getStudentSubmissions();
-           submissions.stream()
-                   .filter(studentSubmission -> studentSubmission.getUserId().equals(userId))
-                   .forEach(submission -> {
-               System.err.println(submission.getUserId());
-                   courseWork.setState(submission.getState());
-                   response.add(courseWork);
+           if(submissions != null) {
+               submissions.stream()
+                       .filter(studentSubmission -> studentSubmission.getUserId().equals(userId))
+                       .forEach(submission -> {
+                           System.err.println(submission.getUserId());
+                           courseWork.setState(submission.getState());
+                           response.add(courseWork);
+                           System.err.println(submission.getState());
+                       });
+           } else {
+               response.add(courseWork);
+           }
 
-               System.err.println(submission.getState());
-           });
 
         }
 
